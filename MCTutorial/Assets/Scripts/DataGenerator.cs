@@ -14,10 +14,12 @@ public class DataGenerator
     private WorldGenerator GeneratorInstance;
     private Queue<GenData> DataToGenerate;
     public bool Terminate;
-    public DataGenerator(WorldGenerator worldGen)
-    {
+
+    private StructureGenerator structureGen;
+    public DataGenerator(WorldGenerator worldGen, StructureGenerator structureGen = null) {
         GeneratorInstance = worldGen;
         DataToGenerate = new Queue<GenData>();
+        this.structureGen = structureGen;
 
         worldGen.StartCoroutine(DataGenLoop());
     }
@@ -43,7 +45,6 @@ public class DataGenerator
 
     public IEnumerator GenerateData(Vector3Int offset, System.Action<int[,,]> callback)
     {
-
         Vector3Int ChunkSize = WorldGenerator.ChunkSize;
         Vector2 NoiseOffset = GeneratorInstance.NoiseOffset;
         Vector2 NoiseScale = GeneratorInstance.NoiseScale;
@@ -52,6 +53,10 @@ public class DataGenerator
         float HeightOffset = GeneratorInstance.HeightOffset;
 
         int[,,] TempData = new int[ChunkSize.x, ChunkSize.y, ChunkSize.z];
+        if (WorldGenerator.AdditiveWorldData.TryGetValue(new Vector2Int(offset.x, offset.z), out int[,,] addedData)) { // new
+            TempData = addedData;
+            WorldGenerator.AdditiveWorldData.Remove(new Vector2Int(offset.x, offset.z));
+        }
 
         Task t = Task.Factory.StartNew(delegate
         {
@@ -63,8 +68,7 @@ public class DataGenerator
                     float PerlinCoordY = NoiseOffset.y + (z + (offset.z * 16f)) / ChunkSize.z * NoiseScale.y;
                     int HeightGen = Mathf.RoundToInt(Mathf.PerlinNoise(PerlinCoordX, PerlinCoordY) * HeightIntensity + HeightOffset);
 
-                    for (int y = HeightGen; y >= 0; y--)
-                    {
+                    for (int y = HeightGen; y >= 0; y--) {
                         int BlockTypeToAssign = 0;
 
                         // Set first layer to grass
@@ -79,7 +83,13 @@ public class DataGenerator
                         //Set everything at height 0 to bedrock.
                         if (y == 0) BlockTypeToAssign = 4;
 
-                        TempData[x, y, z] = BlockTypeToAssign;
+                        if (TempData[x, y, z] == 0) {
+                            TempData[x, y, z] = BlockTypeToAssign;
+                        }
+                    }
+
+                    if (structureGen != null) {
+                        structureGen.GenerateStructure(new Vector2Int(offset.x, offset.z), ref TempData, x, z);
                     }
                 }
             }

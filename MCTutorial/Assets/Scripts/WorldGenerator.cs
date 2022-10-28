@@ -7,6 +7,7 @@ public class WorldGenerator : MonoBehaviour
 {
     public static Dictionary<Vector3Int, int[,,]> WorldData;
     public static Dictionary<Vector2Int, GameObject> ActiveChunks;
+    public static Dictionary<Vector2Int, int[,,]> AdditiveWorldData;
     public static readonly Vector3Int ChunkSize = new Vector3Int(16, 256, 16);
 
     [SerializeField] private TextureLoader TextureLoaderInstance;
@@ -24,8 +25,9 @@ public class WorldGenerator : MonoBehaviour
     {
         WorldData = new Dictionary<Vector3Int, int[,,]>();
         ActiveChunks = new Dictionary<Vector2Int, GameObject>();
+        AdditiveWorldData = new Dictionary<Vector2Int, int[,,]>();
         meshCreator = new ChunkMeshCreator(TextureLoaderInstance, this);
-        dataCreator = new DataGenerator(this);
+        dataCreator = new DataGenerator(this, GetComponent<StructureGenerator>());
     }
 
     public IEnumerator CreateChunk(Vector2Int ChunkCoord)
@@ -108,7 +110,7 @@ public class WorldGenerator : MonoBehaviour
         }
     }
 
-    private Vector2Int GetChunkCoordsFromPosition(Vector3 WorldPosition)
+    public static Vector2Int GetChunkCoordsFromPosition(Vector3 WorldPosition)
     {
         return new Vector2Int(
             Mathf.FloorToInt(WorldPosition.x / ChunkSize.x),
@@ -116,7 +118,7 @@ public class WorldGenerator : MonoBehaviour
         );
     }
 
-    private Vector3Int WorldToLocalCoords(Vector3Int WorldPosition, Vector2Int Coords)
+    public static Vector3Int WorldToLocalCoords(Vector3Int WorldPosition, Vector2Int Coords)
     {
         return new Vector3Int
         {
