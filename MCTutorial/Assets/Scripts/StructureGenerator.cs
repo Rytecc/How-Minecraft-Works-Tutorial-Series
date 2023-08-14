@@ -53,9 +53,9 @@ public class StructureGenerator : MonoBehaviour
         }
     }
 
-    private int getTopBlockFromDataXZ(int[,,] data, int x, int z, int target = 1) {
+    private int getTopBlockFromDataXZ(int[,,] data, int x, int z) {
         for (int y = WorldGenerator.ChunkSize.y - 1; y >= 0; y--) {
-            if (data[x, y, z] == target) {
+            if (data[x, y, z] != 0) {
                 return y;
             }
         }
